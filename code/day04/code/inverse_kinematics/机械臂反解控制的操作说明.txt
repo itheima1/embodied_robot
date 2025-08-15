@@ -1,0 +1,5 @@
+1. 启动npm的服务器
+npm run dev
+
+2. 启动反解控制的python服务器
+python invers_arm_server.py

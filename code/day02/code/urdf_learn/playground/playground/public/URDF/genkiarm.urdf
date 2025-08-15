@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?> <!-- 这是一个XML文件的标准声明 --> 
+<robot name="my_awesome_arm"> 
+<!-- 我们所有的代码都将写在这里面 --> 
+<!-- =============================== LINKS =============================== --> 
+<!-- Link 1: 机器人的基座，所有运动的起点 --> 
+<link name="Base"> 
+		<visual> 
+		<!-- geometry定义了它的外观，我们从外部STL文件加载 --> 
+			<geometry> <!-- filename的路径是相对于这个URDF文件的相对路径 --> 
+				<mesh filename="meshes/AAA.stl" /> 
+			</geometry> 
+		</visual> 
+</link> 
+
+<!-- Link 2: 腰部旋转部件 --> 
+	<link name="yao"> 
+	<visual>
+		<geometry> <mesh filename="meshes/BBB.stl" /> </geometry>
+	 </visual> 
+	</link> 
+	
+<link name="jian1"><visual><geometry><mesh filename="meshes/CCC.stl"/></geometry></visual></link> 
+
+
+<link name="jian2"><visual><geometry><mesh filename="meshes/CCC2.stl"/></geometry></visual></link>
+
+ <link name="wan"><visual><geometry><mesh filename="meshes/DDD.stl"/></geometry></visual></link>
+
+ <link name="wan2"><visual><geometry><mesh filename="meshes/EEE.stl"/></geometry></visual></link> 
+ 
+ <link name="zhua"><visual><geometry><mesh filename="meshes/FFF.stl"/></geometry></visual></link> 	
+	
+
+
+<!-- =============================== JOINTS =============================== --> 
+<!-- Joint 1: 连接 Base 和 yao，实现腰部旋转 -->
+ <joint name="Rotation" type="revolute"> 
+ <!-- 定义父子关系：把'yao'连接到'Base'上 --> 
+	<parent link="Base"/>
+	<child link="yao"/> 
+ 
+ <!-- origin定义'安装位置'和'安装姿态' --> 
+ <!-- xyz: 'yao'的原点相对于'Base'原点的位置(x,y,z) in meters --> 
+ <!-- rpy: 'yao'的姿态相对于'Base'姿态的旋转(roll,pitch,yaw) in radians --> 
+   <origin xyz="-0.013 0 0.0265" rpy="0 -1.57 0"/> 
+ <!-- axis定义旋转轴的方向，在关节自身的坐标系下 -->
+ <!-- "1 0 0" 表示绕着新的X轴旋转 --> 
+	<axis xyz="1 0 0"/>
+ <!-- limit定义运动范围 --> 
+	<limit lower="-1.57" upper="1.57" effort="35" velocity="1"/> 
+ </joint> 
+
+<!-- Joint 2: 连接 yao 和 jian1 --> <joint name="Rotation2" type="revolute"> <parent link="yao"/> <child link="jian1"/> <origin xyz="0.081 0 0" rpy="0 1.57 0"/> <axis xyz="0 1 0"/> <limit lower="-1.57" upper="1.57" effort="35" velocity="1"/> </joint> 
+
+<!-- Joint 3: 连接 jian1 和 jian2 --> <joint name="Rotation3" type="revolute"> <parent link="jian1"/> <child link="jian2"/> <origin xyz="0 0 0.118" rpy="0 0 0"/> <axis xyz="0 1 0"/> <limit lower="-1.57" upper="1.57" effort="35" velocity="1"/> </joint> 
+
+
+<!-- Joint 4: 连接 jian2 和 wan --> <joint name="Rotation4" type="revolute"> <parent link="jian2"/> <child link="wan"/> <origin xyz="0 0 0.118" rpy="0 0 0"/> <axis xyz="0 1 0"/> <limit lower="-1.57" upper="1.57" effort="35" velocity="1"/> </joint> 
+
+
+<!-- Joint 5: 连接 wan 和 wan2 --> <joint name="Rotation5" type="revolute"> <parent link="wan"/> <child link="wan2"/> <origin xyz="0 0 0.0635" rpy="0 0 0"/> <axis xyz="0 0 1"/> <limit lower="-1.57" upper="1.57" effort="35" velocity="1"/> </joint> 
+
+
+<!-- Joint 6: 连接 wan2 和 zhua --> <joint name="Rotation6" type="revolute"> 
+<parent link="wan2"/> 
+<child link="zhua"/>
+<origin xyz="0 -0.0132 0.021" rpy="0 0 0"/> 
+<axis xyz="1 0 0"/> 
+<limit lower="0" upper="1.57" effort="35" velocity="1"/> </joint> 
+
+</robot> 

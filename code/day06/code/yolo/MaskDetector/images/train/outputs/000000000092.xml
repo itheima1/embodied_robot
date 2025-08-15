@@ -1,0 +1,18 @@
+<?xml version="1.0" ?>
+<doc>
+	<path>E:\jszn_bj\day06\code\yolo\MaskDetector\images\train\000000000092.jpg</path>
+	<outputs>
+		<object>
+			<item>
+				<name>mask</name>
+			</item>
+		</object>
+	</outputs>
+	<time_labeled>1754038699247</time_labeled>
+	<labeled>true</labeled>
+	<size>
+		<width>652</width>
+		<height>946</height>
+		<depth>3</depth>
+	</size>
+</doc>

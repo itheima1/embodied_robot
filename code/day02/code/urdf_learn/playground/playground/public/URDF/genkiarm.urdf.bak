@@ -1,0 +1,163 @@
+<?xml version='1.0' encoding='utf-8'?>
+<robot name="so_arm100_simplified_core"> <!-- 保留机器人名称 -->
+
+  <!-- Base Link: 机器人的基础连杆 -->
+  <link name="Base">
+    <!-- visual: 保留基础连杆的外观，mesh文件指向其几何形状 -->
+    <visual>
+      <geometry>
+        <mesh filename="meshes/AAA.stl" /> <!-- 注意: filename需要包路径 -->
+        <!-- 如果你的STL单位是毫米(mm), 需要添加 scale="0.001 0.001 0.001" -->
+      </geometry>
+      <!-- origin: 如果STL文件的原点不是你期望的连杆坐标系原点，需要在这里调整 -->
+      <!-- <origin xyz="0 0 0" rpy="0 0 0"/> -->
+    </visual>
+    <!-- 保留第二个visual，因为它代表不同的部分 (可选，如果一个mesh就够了可以删掉) -->
+
+  </link>
+
+  <!-- Rotation_Pitch Link: 第一个活动连杆 -->
+  <link name="yao">
+    <visual>
+      <geometry>
+        <mesh filename="meshes/BBB.stl" />
+		 <origin xyz="0 0 0" rpy="0 0 0"/>
+      </geometry>
+
+    </visual>
+
+  </link>
+  
+    <!-- Rotation_Pitch Link: 第一个活动连杆 -->
+  <link name="jian1">
+    <visual>
+      <geometry>
+        <mesh filename="meshes/CCC.stl" />
+		 <origin xyz="0 0 0" rpy="0 0 0"/>
+      </geometry>
+
+    </visual>
+
+  </link>
+  
+  
+      <!-- Rotation_Pitch Link: 第一个活动连杆 -->
+  <link name="jian2">
+    <visual>
+      <geometry>
+        <mesh filename="meshes/CCC2.stl" />
+		 <origin xyz="0 0 0" rpy="0 0 0"/>
+      </geometry>
+
+    </visual>
+
+  </link>
+  
+    <link name="wan">
+    <visual>
+      <geometry>
+        <mesh filename="meshes/DDD.stl" />
+		 <origin xyz="0 0 0" rpy="0 0 0"/>
+      </geometry>
+
+    </visual>
+
+  </link>
+  
+      <link name="wan2">
+    <visual>
+      <geometry>
+        <mesh filename="meshes/EEE.stl" />
+		 <origin xyz="0 0 0" rpy="0 0 0"/>
+      </geometry>
+
+    </visual>
+
+  </link>
+   <link name="zhua">
+    <visual>
+      <geometry>
+        <mesh filename="meshes/FFF.stl" />
+		 <origin xyz="0 0 0" rpy="0 0 0"/>
+      </geometry>
+
+    </visual>
+
+  </link>
+
+  <!-- Joint: 连接 Base 和 yao -->
+  <joint name="Rotation" type="revolute"> <!-- 关节名称和类型（旋转） -->
+    <parent link="Base"/> <!-- 父连杆 -->
+    <child link="yao"/> <!-- 子连杆 -->
+    <!-- origin: 定义子连杆坐标系原点相对于父连杆坐标系原点的变换 -->
+    <origin xyz="-0.013 0 0.0265" rpy="0 -1.57 0"/> <!-- 这是连接的关键 -->
+    <!-- axis: 定义旋转轴（在关节坐标系下） -->
+    <axis xyz="1 0 0"/> <!-- 这是运动的关键 -->
+    <!-- limit: 定义关节运动限制 (对功能描述很重要) -->
+    <limit lower="-1.57" upper="1.57" effort="35" velocity="1"/>
+  </joint>
+  
+  
+    <!-- Joint: 连接 yao 和 jian1 -->
+  <joint name="Rotation2" type="revolute"> <!-- 关节名称和类型（旋转） -->
+    <parent link="yao"/> <!-- 父连杆 -->
+    <child link="jian1"/> <!-- 子连杆 -->
+    <!-- origin: 定义子连杆坐标系原点相对于父连杆坐标系原点的变换 -->
+    <origin xyz="0.081 0 0.0" rpy="0  1.57 0"/> <!-- 这是连接的关键 -->
+    <!-- axis: 定义旋转轴（在关节坐标系下） -->
+    <axis xyz="0 1 0"/> <!-- 这是运动的关键 -->
+    <!-- limit: 定义关节运动限制 (对功能描述很重要) -->
+    <limit lower="-1.57" upper="1.57" effort="35" velocity="1"/>
+  </joint>
+
+    <!-- Joint: 连接 jian1 和  jian2-->
+  <joint name="Rotation3" type="revolute"> <!-- 关节名称和类型（旋转） -->
+    <parent link="jian1"/> <!-- 父连杆 -->
+    <child link="jian2"/> <!-- 子连杆 -->
+    <!-- origin: 定义子连杆坐标系原点相对于父连杆坐标系原点的变换 -->
+    <origin xyz="0  0 0.118" rpy="0  0 0"/> <!-- 这是连接的关键 -->
+    <!-- axis: 定义旋转轴（在关节坐标系下） -->
+    <axis xyz="0 1 0"/> <!-- 这是运动的关键 -->
+    <!-- limit: 定义关节运动限制 (对功能描述很重要) -->
+    <limit lower="-1.57" upper="1.57" effort="35" velocity="1"/>
+  </joint>
+  
+      <!-- Joint: 连接 jian2 和  wan-->
+  <joint name="Rotation4" type="revolute"> <!-- 关节名称和类型（旋转） -->
+    <parent link="jian2"/> <!-- 父连杆 -->
+    <child link="wan"/> <!-- 子连杆 -->
+    <!-- origin: 定义子连杆坐标系原点相对于父连杆坐标系原点的变换 -->
+    <origin xyz="0  0 0.118" rpy="0  0 0"/> <!-- 这是连接的关键 -->
+    <!-- axis: 定义旋转轴（在关节坐标系下） -->
+    <axis xyz="0 1 0"/> <!-- 这是运动的关键 -->
+    <!-- limit: 定义关节运动限制 (对功能描述很重要) -->
+    <limit lower="-1.57" upper="1.57" effort="35" velocity="1"/>
+  </joint>
+
+
+      <!-- Joint: 连接 wan 和  wan2-->
+  <joint name="Rotation5" type="revolute"> <!-- 关节名称和类型（旋转） -->
+    <parent link="wan"/> <!-- 父连杆 -->
+    <child link="wan2"/> <!-- 子连杆 -->
+    <!-- origin: 定义子连杆坐标系原点相对于父连杆坐标系原点的变换 -->
+    <origin xyz="0  0 0.0635" rpy="0  0 0"/> <!-- 这是连接的关键 -->
+    <!-- axis: 定义旋转轴（在关节坐标系下） -->
+    <axis xyz="0 0 1"/> <!-- 这是运动的关键 -->
+    <!-- limit: 定义关节运动限制 (对功能描述很重要) -->
+    <limit lower="-1.57" upper="1.57" effort="35" velocity="1"/>
+  </joint>
+
+      <!-- Joint: 连接 wan2 和  zhua-->
+  <joint name="Rotation6" type="revolute"> <!-- 关节名称和类型（旋转） -->
+    <parent link="wan2"/> <!-- 父连杆 -->
+    <child link="zhua"/> <!-- 子连杆 -->
+    <!-- origin: 定义子连杆坐标系原点相对于父连杆坐标系原点的变换 -->
+    <origin xyz="0  -0.0132 0.021" rpy="0  0 0"/> <!-- 这是连接的关键 -->
+    <!-- axis: 定义旋转轴（在关节坐标系下） -->
+    <axis xyz="1 0 0"/> <!-- 这是运动的关键 -->
+    <!-- limit: 定义关节运动限制 (对功能描述很重要) -->
+    <limit lower="0" upper="1.57" effort="35" velocity="1"/>
+  </joint>
+
+
+</robot>

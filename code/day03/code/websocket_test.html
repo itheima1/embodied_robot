@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket 角度数据测试工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .joint-control {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .joint-control label {
+            width: 80px;
+            font-weight: bold;
+        }
+        .joint-control input[type="range"] {
+            flex: 1;
+            margin: 0 10px;
+        }
+        .joint-control input[type="number"] {
+            width: 80px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .button-group {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #1e7e34;
+        }
+        .btn-warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        .btn-warning:hover {
+            background-color: #e0a800;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WebSocket 角度数据测试工具</h1>
+        
+        <div id="status" class="status disconnected">
+            状态: 未连接
+        </div>
+        
+        <div class="button-group">
+            <button id="connectBtn" class="btn-primary" onclick="connect()">连接 WebSocket</button>
+            <button id="disconnectBtn" class="btn-danger" onclick="disconnect()" disabled>断开连接</button>
+            <button class="btn-warning" onclick="clearLog()">清空日志</button>
+        </div>
+        
+        <h3>关节角度控制</h3>
+        <div id="jointControls">
+            <!-- 关节控制器将在这里动态生成 -->
+        </div>
+        
+        <div class="button-group">
+            <button class="btn-success" onclick="sendCurrentAngles()">发送当前角度</button>
+            <button class="btn-primary" onclick="startAutoSend()">开始自动发送</button>
+            <button class="btn-warning" onclick="stopAutoSend()">停止自动发送</button>
+        </div>
+        
+        <h3>预设动作</h3>
+        <div class="preset-buttons">
+            <button class="btn-primary" onclick="sendPreset('home')">回到原点</button>
+            <button class="btn-primary" onclick="sendPreset('wave')">挥手动作</button>
+            <button class="btn-primary" onclick="sendPreset('reach')">伸展动作</button>
+            <button class="btn-primary" onclick="sendPreset('random')">随机角度</button>
+        </div>
+        
+        <div class="log" id="log"></div>
+    </div>
+    
+    <script>
+        let websocket = null;
+        let isConnected = false;
+        let autoSendInterval = null;
+        
+        // 关节角度数组
+        let jointAngles = [0, 0, 0, 0, 0, 0];
+        
+        // 初始化关节控制器
+        function initJointControls() {
+            const container = document.getElementById('jointControls');
+            
+            for (let i = 0; i < 6; i++) {
+                const div = document.createElement('div');
+                div.className = 'joint-control';
+                
+                div.innerHTML = `
+                    <label>关节${i + 1}:</label>
+                    <input type="range" id="joint${i}" min="-3.14" max="3.14" step="0.01" value="0" 
+                           oninput="updateJointAngle(${i}, this.value)">
+                    <input type="number" id="joint${i}Value" min="-3.14" max="3.14" step="0.01" value="0" 
+                           onchange="updateJointFromInput(${i}, this.value)">
+                    <span>rad</span>
+                `;
+                
+                container.appendChild(div);
+            }
+        }
+        
+        // 更新关节角度
+        function updateJointAngle(index, value) {
+            jointAngles[index] = parseFloat(value);
+            document.getElementById(`joint${index}Value`).value = value;
+        }
+        
+        // 从数字输入更新关节角度
+        function updateJointFromInput(index, value) {
+            jointAngles[index] = parseFloat(value);
+            document.getElementById(`joint${index}`).value = value;
+        }
+        
+        // 连接WebSocket
+        function connect() {
+            const wsUrl = 'ws://localhost:8080';
+            
+            try {
+                websocket = new WebSocket(wsUrl);
+                
+                websocket.onopen = function(event) {
+                    isConnected = true;
+                    updateStatus('connected', '已连接到 ' + wsUrl);
+                    document.getElementById('connectBtn').disabled = true;
+                    document.getElementById('disconnectBtn').disabled = false;
+                    log('WebSocket连接已建立');
+                };
+                
+                websocket.onmessage = function(event) {
+                    log('收到消息: ' + event.data);
+                };
+                
+                websocket.onclose = function(event) {
+                    isConnected = false;
+                    updateStatus('disconnected', '连接已断开');
+                    document.getElementById('connectBtn').disabled = false;
+                    document.getElementById('disconnectBtn').disabled = true;
+                    log('WebSocket连接已关闭');
+                };
+                
+                websocket.onerror = function(error) {
+                    log('WebSocket错误: ' + error);
+                };
+                
+            } catch (error) {
+                log('连接失败: ' + error);
+            }
+        }
+        
+        // 断开连接
+        function disconnect() {
+            if (websocket) {
+                websocket.close();
+            }
+            stopAutoSend();
+        }
+        
+        // 发送当前角度
+        function sendCurrentAngles() {
+            if (!isConnected) {
+                log('错误: WebSocket未连接');
+                return;
+            }
+            
+            const data = {
+                angles: jointAngles,
+                timestamp: Date.now()
+            };
+            
+            websocket.send(JSON.stringify(data));
+            log('发送角度数据: [' + jointAngles.map(a => a.toFixed(3)).join(', ') + ']');
+        }
+        
+        // 开始自动发送
+        function startAutoSend() {
+            if (autoSendInterval) {
+                stopAutoSend();
+            }
+            
+            autoSendInterval = setInterval(() => {
+                sendCurrentAngles();
+            }, 100); // 每100ms发送一次
+            
+            log('开始自动发送角度数据');
+        }
+        
+        // 停止自动发送
+        function stopAutoSend() {
+            if (autoSendInterval) {
+                clearInterval(autoSendInterval);
+                autoSendInterval = null;
+                log('停止自动发送');
+            }
+        }
+        
+        // 发送预设动作
+        function sendPreset(presetName) {
+            let angles;
+            
+            switch (presetName) {
+                case 'home':
+                    angles = [0, 0, 0, 0, 0, 0];
+                    break;
+                case 'wave':
+                    angles = [0, -0.5, 0.8, 0, 1.2, 0];
+                    break;
+                case 'reach':
+                    angles = [0.5, 0.3, -0.6, 0.4, 0, 0];
+                    break;
+                case 'random':
+                    angles = Array.from({length: 6}, () => (Math.random() - 0.5) * 2);
+                    break;
+                default:
+                    return;
+            }
+            
+            // 更新UI
+            for (let i = 0; i < 6; i++) {
+                jointAngles[i] = angles[i];
+                document.getElementById(`joint${i}`).value = angles[i];
+                document.getElementById(`joint${i}Value`).value = angles[i].toFixed(3);
+            }
+            
+            // 发送数据
+            sendCurrentAngles();
+            log(`发送预设动作: ${presetName}`);
+        }
+        
+        // 更新状态显示
+        function updateStatus(status, message) {
+            const statusElement = document.getElementById('status');
+            statusElement.className = `status ${status}`;
+            statusElement.textContent = `状态: ${message}`;
+        }
+        
+        // 添加日志
+        function log(message) {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.innerHTML += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        // 清空日志
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        // 页面加载时初始化
+        window.onload = function() {
+            initJointControls();
+            log('WebSocket测试工具已加载');
+            log('请点击"连接 WebSocket"按钮开始');
+        };
+        
+        // 页面卸载时清理
+        window.onbeforeunload = function() {
+            stopAutoSend();
+            if (websocket) {
+                websocket.close();
+            }
+        };
+    </script>
+</body>
+</html>

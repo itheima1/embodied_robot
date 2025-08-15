@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>线性回归与均方误差(MSE)模拟器</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background-color: #f4f7f9;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            width: 100%;
+            max-width: 1200px;
+            background-color: #ffffff;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .visualization-pane, .controls-pane {
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        .visualization-pane {
+            flex: 2;
+            min-width: 400px;
+            border-right: 1px solid #e0e0e0;
+        }
+        .controls-pane {
+            flex: 1;
+            min-width: 300px;
+            background-color: #fdfdfd;
+        }
+        canvas {
+            width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            aspect-ratio: 1/1;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-top: 0;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 25px;
+        }
+        p, li {
+            line-height: 1.7;
+            color: #555;
+        }
+        ol {
+            padding-left: 20px;
+        }
+        .control-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+        .value-display {
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            font-weight: bold;
+            color: #e74c3c;
+            background-color: #ecf0f1;
+            padding: 5px 10px;
+            border-radius: 5px;
+            display: inline-block;
+            min-width: 60px;
+            text-align: center;
+        }
+        #mse-value {
+            color: #27ae60;
+            font-size: 1.2em;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            font-size: 1em;
+            font-weight: bold;
+            color: white;
+            background-color: #3498db;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+            }
+            .visualization-pane {
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="visualization-pane">
+            <h1>交互式MSE模拟器</h1>
+            <canvas id="simulator-canvas" width="600" height="600"></canvas>
+        </div>
+        <div class="controls-pane">
+            <h2>什么是损失函数？</h2>
+            <p>我们如何用数学语言来定义一条直线是“好”还是“坏”呢？答案是<strong>损失函数 (Loss Function)</strong>。</p>
+            <p>损失函数是一个衡量模型预测值与真实值之间差距的函数。<strong>差距越大，损失值就越大</strong>，说明模型表现越差。</p>
+
+            <h2>均方误差 (MSE)</h2>
+            <p>对于线性回归，最常用的损失函数是<strong>均方误差 (Mean Squared Error, MSE)</strong>。它的计算步骤如下：</p>
+            <ol>
+                <li>计算每个真实数据点（蓝点）到我们预测直线上的<strong>垂直距离（误差线）</strong>。</li>
+                <li>将所有这些距离（误差）进行<strong>平方</strong>（以消除负号并放大较大误差）。</li>
+                <li>将所有平方误差加起来，再求<strong>平均值</strong>。</li>
+            </ol>
+            <p><strong>我们的目标：</strong>就是调整 <code>w</code> 和 <code>b</code>，使得这个MSE值最小！</p>
+
+            <div class="control-group">
+                <label for="w-slider">调整斜率 (w): <span id="w-value" class="value-display">1.00</span></label>
+                <input type="range" id="w-slider" min="-2" max="4" step="0.01" value="1.0">
+            </div>
+
+            <div class="control-group">
+                <label for="b-slider">调整截距 (b): <span id="b-value" class="value-display">0.00</span></label>
+                <input type="range" id="b-slider" min="-5" max="5" step="0.1" value="0.0">
+            </div>
+
+            <div class="control-group">
+                <label>均方误差 (MSE): <span id="mse-value" class="value-display">0.000</span></label>
+            </div>
+            
+            <button id="best-fit-btn">一键找到最佳拟合</button>
+            <button id="reset-btn" style="background-color:#95a5a6; margin-top:10px;">重置</button>
+
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM Elements ---
+        const canvas = document.getElementById('simulator-canvas');
+        const ctx = canvas.getContext('2d');
+        const wSlider = document.getElementById('w-slider');
+        const bSlider = document.getElementById('b-slider');
+        const wValueDisplay = document.getElementById('w-value');
+        const bValueDisplay = document.getElementById('b-value');
+        const mseValueDisplay = document.getElementById('mse-value');
+        const bestFitBtn = document.getElementById('best-fit-btn');
+        const resetBtn = document.getElementById('reset-btn');
+
+        // --- Data & Parameters ---
+        const dataPoints = [
+            { x: 1, y: 3.1 }, { x: 2, y: 4.9 }, { x: 3, y: 7.2 },
+            { x: 4, y: 8.9 }, { x: 5, y: 11.3 }, { x: 6, y: 12.8 },
+            { x: 7, y: 15.1 }, { x: 8, y: 17.0 }, { x: 9, y: 18.9 }
+        ];
+        const padding = 50;
+        const xMax = 10;
+        const yMax = 20;
+
+        let w = parseFloat(wSlider.value);
+        let b = parseFloat(bSlider.value);
+        
+        let optimalW, optimalB;
+
+        // --- Core Functions ---
+        function mapToCanvas(x, y) {
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            const xScale = (canvasWidth - 2 * padding) / xMax;
+            const yScale = (canvasHeight - 2 * padding) / yMax;
+
+            const canvasX = padding + x * xScale;
+            const canvasY = canvasHeight - padding - y * yScale;
+            return { x: canvasX, y: canvasY };
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawAxes();
+
+            let totalSquaredError = 0;
+
+            // Draw regression line and error lines
+            for (const point of dataPoints) {
+                const predictedY = w * point.x + b;
+                totalSquaredError += Math.pow(point.y - predictedY, 2);
+
+                const start = mapToCanvas(point.x, point.y);
+                const end = mapToCanvas(point.x, predictedY);
+                
+                // Draw error line
+                ctx.beginPath();
+                ctx.moveTo(start.x, start.y);
+                ctx.lineTo(end.x, end.y);
+                ctx.strokeStyle = 'rgba(231, 76, 60, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            // Draw data points on top
+            for (const point of dataPoints) {
+                const { x, y } = mapToCanvas(point.x, point.y);
+                ctx.beginPath();
+                ctx.arc(x, y, 6, 0, 2 * Math.PI);
+                ctx.fillStyle = '#3498db';
+                ctx.fill();
+            }
+
+            // Draw the main regression line
+            const lineYStart = w * 0 + b;
+            const lineYEnd = w * xMax + b;
+            const startPoint = mapToCanvas(0, lineYStart);
+            const endPoint = mapToCanvas(xMax, lineYEnd);
+
+            ctx.beginPath();
+            ctx.moveTo(startPoint.x, startPoint.y);
+            ctx.lineTo(endPoint.x, endPoint.y);
+            ctx.strokeStyle = '#2c3e50';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Calculate and display MSE
+            const mse = totalSquaredError / dataPoints.length;
+            mseValueDisplay.textContent = mse.toFixed(3);
+        }
+
+        function drawAxes() {
+            ctx.beginPath();
+            ctx.strokeStyle = '#bdc3c7';
+            ctx.lineWidth = 1;
+
+            // Y-axis
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, canvas.height - padding);
+            // X-axis
+            ctx.lineTo(canvas.width - padding, canvas.height - padding);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#7f8c8d';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // X-axis labels
+            for(let i=0; i<=xMax; i+=2) {
+                 const {x, y} = mapToCanvas(i, 0);
+                 ctx.fillText(i, x, y + 20);
+            }
+            // Y-axis labels
+            for(let i=0; i<=yMax; i+=5) {
+                const {x, y} = mapToCanvas(0, i);
+                ctx.fillText(i, x - 25, y);
+            }
+        }
+        
+        function updateValues() {
+            w = parseFloat(wSlider.value);
+            b = parseFloat(bSlider.value);
+            wValueDisplay.textContent = w.toFixed(2);
+            bValueDisplay.textContent = b.toFixed(2);
+            draw();
+        }
+
+        function calculateBestFit() {
+            const n = dataPoints.length;
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+
+            for (const p of dataPoints) {
+                sumX += p.x;
+                sumY += p.y;
+                sumXY += p.x * p.y;
+                sumX2 += p.x * p.x;
+            }
+
+            const meanX = sumX / n;
+            const meanY = sumY / n;
+
+            optimalW = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            optimalB = meanY - optimalW * meanX;
+        }
+
+        function applyBestFit() {
+            if (optimalW === undefined) {
+                calculateBestFit();
+            }
+            wSlider.value = optimalW;
+            bSlider.value = optimalB;
+            updateValues();
+        }
+        
+        function reset() {
+            wSlider.value = 1.0;
+            bSlider.value = 0.0;
+            updateValues();
+        }
+
+        // --- Event Listeners ---
+        wSlider.addEventListener('input', updateValues);
+        bSlider.addEventListener('input', updateValues);
+        bestFitBtn.addEventListener('click', applyBestFit);
+        resetBtn.addEventListener('click', reset);
+
+        // --- Initial Call ---
+        updateValues();
+    });
+    </script>
+</body>
+</html>
