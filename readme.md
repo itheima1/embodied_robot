@@ -1,5 +1,7 @@
 # 黑马程序员 · 具身智能课程大纲
 
+全套视频：   https://www.bilibili.com/video/BV1nz6KBHEc9/?spm_id_from=333.337.search-card.all.click
+
 ## 🚀 AI的下一个奇点：从虚拟走向现实
 
 当ChatGPT已经能为你写诗、作画、编程时，你是否想过，AI的下一步将走向何方？
